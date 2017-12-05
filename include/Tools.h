@@ -1,19 +1,25 @@
+# pragma once 
+
+#include <string>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-using namespace Eigen;
-
 #include <opencv2/core/eigen.hpp>
+#include <opencv2/calib3d/calib3d.hpp>//KeyPoint
 #include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
+using namespace std;
 using namespace cv;
+
+const string TYPE = "depth";
+const double GRIDSIZE = 0.02;
 
 class Frame
 {
 public:
     Frame(const Mat &rgb_img, const Mat &depth_img):
-    rgb(rgb_img), depth(depth_img)
+    rgb(rgb_img), depth(depth_img) 
     {}
     Mat rgb;
     Mat depth;
@@ -38,22 +44,5 @@ private:
 class Tools
 {
 public:
-    static Eigen::Isometry3d cvMat2Eigen(const Mat& rvec, const Mat& tvec)
-    {
-        /*rvec to eigen_R*/
-        Mat cv_R;
-        Rodrigues(rvec, cv_R);
-        Matrix3d eigen_R;
-        cv2eigen(cv_R, eigen_R);
-
-        /*eigen_R and tvec to T*/
-        Isometry3d T = Eigen::Isometry3d::Identity();
-        AngleAxisd angle(eigen_R);
-        Translation<double,3> trans(tvec.at<double>(0,0), tvec.at<double>(0,1), tvec.at<double>(0,2));//???
-        T = angle;
-        T(0,3) = tvec.at<double>(0,0);
-        T(1,3) = tvec.at<double>(0,1);
-        T(2,3) = tvec.at<double>(0,2);
-        return T;
-    }
+    static Eigen::Isometry3d cvmat_to_eigen(const Mat& rvec, const Mat& tvec);
 };

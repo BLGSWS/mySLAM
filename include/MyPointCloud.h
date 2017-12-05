@@ -2,14 +2,16 @@
 
 #include <string>
 
+#include <pcl/io/pcd_io.h> 
+#include <pcl/point_types.h> 
+
+#include <pcl/common/transforms.h> //变换矩阵
+#include <pcl/filters/voxel_grid.h> //滤波器
+//#include <pcl/visualization/cloud_viewer.h>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 using namespace cv;
-
-//usr/inculde下寻找
-//PCL
-#include <pcl/io/pcd_io.h> 
-#include <pcl/point_types.h> 
 
 #include "Camera.h"
 #include "Tools.h"
@@ -24,12 +26,14 @@ public:
     cloud(Point_cloud::Ptr(new Point_cloud)),
     cloud_mount(Point_cloud::Ptr(new Point_cloud))
     {}
-    Point_cloud::Ptr create_point_cloud_by_disp(const Mat &rgb, const Mat &disp);
-    Point_cloud::Ptr create_point_cloud_by_depth(const Mat &rgb, const Mat &disp);
-    Point_cloud::Ptr join_point_cloud(const Frame &frame, const Eigen::Isometry3d &T);
+    Point_cloud::Ptr join_point_cloud(const Frame &frame, const Result_of_PNP &pnp_result);
+    Point_cloud::Ptr create_first_point_cloud(const Frame &frame);
+    Point_cloud::Ptr get_cloud() const;
     void save_point_cloud(const string &file_path, Point_cloud::Ptr pc);
     void read_point_cloud(const string &file_path);
 private:
+    void create_point_cloud_by_disp(const Mat &rgb, const Mat &disp);
+    void create_point_cloud_by_depth(const Mat &rgb, const Mat &disp);
     My_point_cloud();
     MyCamera camera;
     Point_cloud::Ptr cloud;

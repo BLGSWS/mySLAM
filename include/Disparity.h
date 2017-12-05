@@ -3,6 +3,7 @@
 #include <opencv2/core/core.hpp> 
 #include <opencv2/highgui/highgui.hpp> 
 
+/*视差检测模块*/
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv/cvaux.hpp>
 #include <opencv2/legacy/legacy.hpp>
@@ -13,12 +14,6 @@ using namespace cv;
 Mat BM_get_disparity(const Mat &left_rgb, const Mat &right_rgb);
 Mat GC_get_disparity(const Mat &left_rgb, const Mat &right_rgb);
 
-Eigen::Isometry3d cvMat2Eigen(cv::Mat& rvec, cv::Mat& tvec)
-{
-    Mat cv_R;
-    Rodrigues(rvec, R);
-
-}
 
 template<class T>
 void mat_print(const cv::Mat &mat)
