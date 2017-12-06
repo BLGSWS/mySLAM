@@ -1,6 +1,6 @@
 FIND_PACKAGE( OpenCV REQUIRED )
 
-FIND_PACKAGE( PCL REQUIRED COMPONENTS common io filters )
+FIND_PACKAGE( PCL REQUIRED COMPONENTS common visualization io filters )
 list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4") # use this in Ubuntu 16.04
 
 ADD_DEFINITIONS( ${PCL_DEFINITIONS} )

@@ -7,7 +7,7 @@
 
 #include <pcl/common/transforms.h> //变换矩阵
 #include <pcl/filters/voxel_grid.h> //滤波器
-//#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/cloud_viewer.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -29,7 +29,7 @@ public:
     Point_cloud::Ptr join_point_cloud(const Frame &frame, const Result_of_PNP &pnp_result);
     Point_cloud::Ptr create_first_point_cloud(const Frame &frame);
     Point_cloud::Ptr get_cloud() const;
-    void save_point_cloud(const string &file_path, Point_cloud::Ptr pc);
+    void save_point_cloud(const string &file_path);
     void read_point_cloud(const string &file_path);
 private:
     void create_point_cloud_by_disp(const Mat &rgb, const Mat &disp);

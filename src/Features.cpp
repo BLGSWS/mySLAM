@@ -64,7 +64,7 @@ vector<DMatch> Feature_detector::match_features(const Frame &frame_before, const
     double min_dis = 9999.0;
     for (size_t i = 0u; i < matches.size(); i++)
     {
-        if (matches[i].distance < min_dis)
+        if (matches[i].distance < min_dis && matches[i].distance != 0)
         {
             min_dis = matches[i].distance;
         }
@@ -72,6 +72,10 @@ vector<DMatch> Feature_detector::match_features(const Frame &frame_before, const
         {}
     }
     cout << "match_features: min dis is " << min_dis << endl;
+
+    if(min_dis < 10) min_dis = 10;
+    else
+    {}
 
     /*选择相对距离较小的特征*/
     vector<DMatch>::iterator it = matches.begin();

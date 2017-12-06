@@ -1,7 +1,10 @@
-#define DEC
+#define VO
+#define VISUAL
 
 #include <iostream> 
 #include <string> 
+#include <sstream>
+#include <queue>
 using namespace std;
 
 #include "MyPointCloud.h"
@@ -21,38 +24,90 @@ const double Tx = 40;
 
 int main()
 {
-#ifdef DEC
+#ifdef VO
     /*定义相机对象*/
     MyCamera camera = MyCamera(Factor, Cx, Cy, Fx, Fy, Tx);
     /*定义特征处理对象*/
     Feature_detector detector = Feature_detector(camera, "ORB");
     /*定义点云对象*/
     My_point_cloud pcloud(camera);
+    pcl::visualization::CloudViewer viewer("viewer");
+    /*用队列管理帧，为多线程挖坑*/
+    queue<Frame> frame_que;
+    bool flag = true;
 
-    /*读取图片*/
-    Mat rgb_before = imread("./dec_data/rgb1.png");
-    Mat rgb_after = imread("./dec_data/rgb2.png");
-    Mat depth_before = imread("./dec_data/depth1.png", -1);
-    Mat depth_after = imread("./dec_data/depth2.png", -1);
-    if(rgb_before.empty() || depth_before.empty())
+
+    for(unsigned int i = 1u; i <= 200; i++)
     {
-        cout << "cannt find images" << endl;
-        return -1;
-    }
-    
-    /*求解相机运动*/
-    Frame frame1 = detector.detect_features(rgb_before, depth_before);
-    Frame frame2 = detector.detect_features(rgb_after, depth_after);
-    vector<DMatch> matches = detector.match_features(frame1, frame2);
-    Result_of_PNP trans_mat = detector.estimate_motion(frame1, frame2, matches);
-    cout << "inliers = " << trans_mat.inliers << endl;
-    cout << "R = " << trans_mat.rvec << endl;
-    cout << "t = "<< trans_mat.tvec << endl;
+        /*字符串转个数字还搞这么麻烦*/
+        stringstream ss;
+        ss << i;
+        cout << "processing " << i << "th image" << endl;
+        /*读取图像*/
+        string rgb_filename = "./data/rgb_png/" + ss.str() + ".png";
+        string depth_filename = "./data/depth_png/" + ss.str() + ".png";
+        Mat rgb = imread(rgb_filename);
+        Mat depth = imread(depth_filename, -1);
+        if(rgb.empty() || depth.empty())
+        {
+            cout << rgb_filename << " " << depth_filename << endl;
+            cout << "main: cannt find images" << endl;
+            return -1;
+        }
 
-    /*生成并合成点云*/
-    pcloud.create_first_point_cloud(frame1);
-    Point_cloud::Ptr pc_ptr = pcloud.join_point_cloud(frame2, trans_mat);
-    pcloud.save_point_cloud("./dec_data/join.pcd", pc_ptr);
+        /*建立帧并入队*/
+        Frame frame = detector.detect_features(rgb, depth);
+        frame_que.push(frame);
+
+        /*判断是否为第一帧*/
+        if(frame_que.size() == 1)
+        {
+            if(flag == true)
+            {
+                /*生成点云*/
+                pcloud.create_first_point_cloud(frame);
+                flag == false;
+            }
+            else continue; //非多线程应该不会进入else分支
+        }
+        else
+        {
+            Frame frame_before = frame_que.front(); 
+            vector<DMatch> matches = detector.match_features(frame_before, frame);
+            
+            /*pnp求解*/
+            Result_of_PNP trans_mat = detector.estimate_motion(frame_before, frame, matches);
+
+            /*inliers太小放弃该帧*/
+            if(trans_mat.inliers <= 5)
+            {
+                cout << "inliers = " << trans_mat.inliers << endl;
+                cout << "main: inliers is too small, give up this frame" << endl;
+                continue;
+            }
+            else
+            {}
+            
+            /*打印位移信息*/
+            cout << "inliers = " << trans_mat.inliers << endl;
+            cout << "R = " << trans_mat.rvec << endl;
+            cout << "t = "<< trans_mat.tvec << endl;
+
+            /*生成并合并点云*/
+            Point_cloud::Ptr cloud = pcloud.join_point_cloud(frame, trans_mat);
+
+#ifdef VISUAL
+            viewer.showCloud(cloud);
+#endif
+
+            /*处理完成，旧帧出队列*/
+            frame_que.pop();
+        }
+        cout << endl;
+    }
+
+    /*保存点云*/
+    pcloud.save_point_cloud("./data/result.pcd");
 #endif
 
     cv::waitKey();

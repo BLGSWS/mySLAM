@@ -166,9 +166,8 @@ Point_cloud::Ptr My_point_cloud::get_cloud() const
         throw exception();
 }
 
-void My_point_cloud::save_point_cloud(const string &file_path, Point_cloud::Ptr pc)
+void My_point_cloud::save_point_cloud(const string &file_path)
 {
-    pcl::io::savePCDFile(file_path, *pc);
-    //pc->points.clear();
+    pcl::io::savePCDFile(file_path, *cloud);
     cout << "Point cloud saved in " << file_path << endl;
 }
