@@ -117,13 +117,10 @@ Point_cloud::Ptr My_point_cloud::join_point_cloud(const Frame &frame, const Resu
         create_point_cloud_by_depth(frame.rgb, frame.depth);
     else
         create_point_cloud_by_disp(frame.rgb, frame.depth);
-    
-    /*转换为旋转矩阵*/
-    Eigen::Isometry3d T = Tools::cvmat_to_eigen(pnp_result.rvec, pnp_result.tvec);
 
     /*旋转点云*/
     Point_cloud::Ptr transformed_cloud(new Point_cloud());
-    pcl::transformPointCloud(*cloud_mount, *transformed_cloud, T.matrix());
+    pcl::transformPointCloud(*cloud_mount, *transformed_cloud, pnp_result.T.matrix());
     *cloud += *transformed_cloud;
     cloud_mount->points.clear();
 

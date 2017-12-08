@@ -1,26 +1,13 @@
 #define VO
-#define VISUAL
 
-#include <iostream> 
-#include <string> 
-#include <sstream>
+#include <iostream>
+#include <string>
 #include <queue>
 using namespace std;
 
 #include "MyPointCloud.h"
 #include "Disparity.h"
 #include "Features.h"
-
-//焦距
-const double Factor = 1000;
-//平移
-const double Cx = 325.5;
-const double Cy = 253.5;
-//缩放系数
-const double Fx = 518.0;
-const double Fy = 519.0;
-//目距
-const double Tx = 40;
 
 int main()
 {
@@ -37,7 +24,7 @@ int main()
     bool flag = true;
 
 
-    for(unsigned int i = 1u; i <= 200; i++)
+    for(unsigned int i = 1u; i <= PIC_NUM; i++)
     {
         /*字符串转个数字还搞这么麻烦*/
         stringstream ss;
@@ -79,7 +66,7 @@ int main()
             Result_of_PNP trans_mat = detector.estimate_motion(frame_before, frame, matches);
 
             /*inliers太小放弃该帧*/
-            if(trans_mat.inliers <= 5)
+            if(trans_mat.inliers <= MIN_INLIERS)
             {
                 cout << "inliers = " << trans_mat.inliers << endl;
                 cout << "main: inliers is too small, give up this frame" << endl;
@@ -89,16 +76,16 @@ int main()
             {}
             
             /*打印位移信息*/
-            cout << "inliers = " << trans_mat.inliers << endl;
-            cout << "R = " << trans_mat.rvec << endl;
-            cout << "t = "<< trans_mat.tvec << endl;
+            cout << "T = " << trans_mat.T.matrix() << endl;
 
             /*生成并合并点云*/
             Point_cloud::Ptr cloud = pcloud.join_point_cloud(frame, trans_mat);
 
-#ifdef VISUAL
-            viewer.showCloud(cloud);
-#endif
+            /*实时显示点云*/
+            if(VISUAL == true && i % FREQUE == 0)
+                viewer.showCloud(cloud);
+            else
+            {}
 
             /*处理完成，旧帧出队列*/
             frame_que.pop();
