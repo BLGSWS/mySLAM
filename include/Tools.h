@@ -29,7 +29,7 @@ private:
     map<string, string> params;//const成员函数访问map必须使用const型迭代器！！！
 };
 
-const Param_reader param("./paraments.ini");//在头文件中声明非const类型对象会出现重定义错误
+const Param_reader param("./paraments.ini");//在头文件中定义非const类型对象会出现重定义错误
 
 /*相机内参*/
 //焦距
@@ -44,7 +44,7 @@ const double Fy = param.get_double("Fy");
 const double Tx = param.get_double("Tx");
 
 const string TYPE = param.get_string("TYPE");
-const double GRIDSIZE = param.get_double("GRIDSIZE");
+const double GRID_SIZE = param.get_double("GRID_SIZE");
 const int MIN_MATCHES = param.get_int("MIN_MATCHES");
 const int MIN_INLIERS = param.get_int("MIN_INLIERS");
 const double MAX_NORM = param.get_double("MAX_NORM");
@@ -55,6 +55,8 @@ const int PIC_NUM = param.get_int("PIC_NUM");
 class Frame
 {
 public:
+    Frame()
+    {}
     Frame(const Mat &rgb_img, const Mat &depth_img):
     rgb(rgb_img), depth(depth_img) 
     {}
@@ -62,8 +64,6 @@ public:
     Mat depth;
     Mat desp; //特征描述子
     vector<KeyPoint> key_points; //关键点集
-private:
-    Frame();
 };
 
 class Result_of_PNP

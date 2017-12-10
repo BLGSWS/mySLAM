@@ -23,19 +23,17 @@ class My_point_cloud
 {
 public:
     My_point_cloud(const MyCamera &c): camera(c),
-    cloud(Point_cloud::Ptr(new Point_cloud)),
-    cloud_mount(Point_cloud::Ptr(new Point_cloud))
+    cloud(Point_cloud::Ptr(new Point_cloud()))
     {}
     Point_cloud::Ptr join_point_cloud(const Frame &frame, const Result_of_PNP &pnp_result);
     Point_cloud::Ptr create_first_point_cloud(const Frame &frame);
     Point_cloud::Ptr get_cloud() const;
-    void save_point_cloud(const string &file_path);
-    void read_point_cloud(const string &file_path);
+    void save_point_cloud(const string &file_path) const;
+    //void read_point_cloud(const string &file_path);
 private:
-    void create_point_cloud_by_disp(const Mat &rgb, const Mat &disp);
-    void create_point_cloud_by_depth(const Mat &rgb, const Mat &disp);
+    Point_cloud::Ptr create_point_cloud_by_disp(const Mat &rgb, const Mat &disp);
+    Point_cloud::Ptr create_point_cloud_by_depth(const Mat &rgb, const Mat &disp);
     My_point_cloud();
     MyCamera camera;
     Point_cloud::Ptr cloud;
-    Point_cloud::Ptr cloud_mount;
 };

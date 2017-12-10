@@ -3,15 +3,9 @@ using namespace std;
 
 #include "MyPointCloud.h"
 
-void My_point_cloud::create_point_cloud_by_disp(const Mat &rgb, const Mat &disp)
+Point_cloud::Ptr My_point_cloud::create_point_cloud_by_disp(const Mat &rgb, const Mat &disp)
 {
-    if(cloud_mount->points.size() != 0)
-    {
-        cout << "warning: cloud_mount is not null" << endl;
-        cloud_mount->points.clear();
-    }
-    else
-    {}
+    Point_cloud::Ptr cloud_mount(new Point_cloud());
 
     if(rgb.rows != disp.rows || rgb.cols != disp.cols)
     {
@@ -47,17 +41,12 @@ void My_point_cloud::create_point_cloud_by_disp(const Mat &rgb, const Mat &disp)
     cloud_mount->width = cloud_mount->points.size();
     cout << "point cloud size = " << cloud_mount->points.size() << endl;
     cloud_mount->is_dense = false;
+    return cloud_mount;
 }
 
-void My_point_cloud::create_point_cloud_by_depth(const Mat &rgb, const Mat &depth)
+Point_cloud::Ptr My_point_cloud::create_point_cloud_by_depth(const Mat &rgb, const Mat &depth)
 {
-    if(cloud_mount->points.size() != 0)
-    {
-        cout << "create_point_cloud_by_depth warning: cloud_mount is not null" << endl;
-        cloud_mount->points.clear();
-    }
-    else
-    {}
+    Point_cloud::Ptr cloud_mount(new Point_cloud());
 
     if(rgb.rows != depth.rows || rgb.cols != depth.cols)
     {
@@ -94,63 +83,47 @@ void My_point_cloud::create_point_cloud_by_depth(const Mat &rgb, const Mat &dept
     cloud_mount->width = cloud_mount->points.size();
     cout << "point cloud size = " << cloud_mount->points.size() << endl;
     cloud_mount->is_dense = false;
+    return cloud_mount;
 }
 
 Point_cloud::Ptr My_point_cloud::join_point_cloud(const Frame &frame, const Result_of_PNP &pnp_result)
 {
-    if(cloud_mount == 0 || cloud == 0)
-    {
-        cout << "error in  join_point_cloud" << endl;
-        throw exception();
-    }
-    else
-    {}
-
     if(cloud->points.size() == 0)
     {
         cout << "join_point_cloud: need first point cloud" << endl;
         throw exception();
     }
 
+    Point_cloud::Ptr cloud_mount(new Point_cloud());
     /*建立点云*/
     if(TYPE == "depth")
-        create_point_cloud_by_depth(frame.rgb, frame.depth);
+        cloud_mount = create_point_cloud_by_depth(frame.rgb, frame.depth);
     else
-        create_point_cloud_by_disp(frame.rgb, frame.depth);
+        cloud_mount = create_point_cloud_by_disp(frame.rgb, frame.depth);
 
     /*旋转点云*/
     Point_cloud::Ptr transformed_cloud(new Point_cloud());
-    pcl::transformPointCloud(*cloud_mount, *transformed_cloud, pnp_result.T.matrix());
-    *cloud += *transformed_cloud;
-    cloud_mount->points.clear();
+    pcl::transformPointCloud(*cloud, *transformed_cloud, pnp_result.T.matrix());//旋转的是原始点云？？？
+    *cloud_mount += *transformed_cloud;
 
     /*滤波*/
     static pcl::VoxelGrid<PointT> voxel;
-    double grid_size = GRIDSIZE;
+    double grid_size = GRID_SIZE;
     voxel.setLeafSize(grid_size, grid_size, grid_size);
-    voxel.setInputCloud(cloud);
-    Point_cloud::Ptr temp(new Point_cloud());
-    voxel.filter(*temp);
-    *cloud = *temp;
+    voxel.setInputCloud(cloud_mount);
+    voxel.filter(*cloud);
     cout << "join_point_cloud: number of points is " << cloud->points.size() << endl;
     return cloud;
 }
 
 Point_cloud::Ptr My_point_cloud::create_first_point_cloud(const Frame &frame)
 {
-    if(cloud_mount == 0 || cloud == 0)
-    {
-        cout << "error in join_point_cloud" << endl;
-        throw exception();
-    }
     /*建立点云*/
     if(TYPE == "depth")
-        create_point_cloud_by_depth(frame.rgb, frame.depth);
+        cloud = create_point_cloud_by_depth(frame.rgb, frame.depth);
     else
-        create_point_cloud_by_disp(frame.rgb, frame.depth);
+        cloud = create_point_cloud_by_disp(frame.rgb, frame.depth);
     
-    *cloud = *cloud_mount;
-    cloud_mount->points.clear();
     cout << "join_point_cloud: number of points is " << cloud->points.size() << endl;
     return cloud;
 }
@@ -163,7 +136,7 @@ Point_cloud::Ptr My_point_cloud::get_cloud() const
         throw exception();
 }
 
-void My_point_cloud::save_point_cloud(const string &file_path)
+void My_point_cloud::save_point_cloud(const string &file_path) const
 {
     pcl::io::savePCDFile(file_path, *cloud);
     cout << "Point cloud saved in " << file_path << endl;

@@ -18,11 +18,11 @@ int main()
     Feature_detector detector = Feature_detector(camera, "ORB");
     /*定义点云对象*/
     My_point_cloud pcloud(camera);
+    /*定义pclviewer对象*/
     pcl::visualization::CloudViewer viewer("viewer");
-    /*用队列管理帧，为多线程挖坑*/
-    queue<Frame> frame_que;
-    bool flag = true;
 
+    Frame current_frame, last_frame;
+    bool first_frame_flag = true;
 
     for(unsigned int i = 1u; i <= PIC_NUM; i++)
     {
@@ -42,34 +42,29 @@ int main()
             return -1;
         }
 
-        /*建立帧并入队*/
-        Frame frame = detector.detect_features(rgb, depth);
-        frame_que.push(frame);
+        /*建立帧*/
+        current_frame = detector.detect_features(rgb, depth);
 
         /*判断是否为第一帧*/
-        if(frame_que.size() == 1)
+        if(first_frame_flag == true)
         {
-            if(flag == true)
-            {
-                /*生成点云*/
-                pcloud.create_first_point_cloud(frame);
-                flag == false;
-            }
-            else continue; //非多线程应该不会进入else分支
+            pcloud.create_first_point_cloud(current_frame);
+            first_frame_flag = false;
+            last_frame = current_frame;
         }
         else
         {
-            Frame frame_before = frame_que.front(); 
-            vector<DMatch> matches = detector.match_features(frame_before, frame);
+            vector<DMatch> matches = detector.match_features(last_frame, current_frame);
             
             /*pnp求解*/
-            Result_of_PNP trans_mat = detector.estimate_motion(frame_before, frame, matches);
+            Result_of_PNP trans_mat = detector.estimate_motion(last_frame, current_frame, matches);
 
             /*inliers太小放弃该帧*/
-            if(trans_mat.inliers <= MIN_INLIERS)
+            if(trans_mat.inliers <= MIN_INLIERS || trans_mat.norm >= MAX_NORM)
             {
                 cout << "inliers = " << trans_mat.inliers << endl;
-                cout << "main: inliers is too small, give up this frame" << endl;
+                cout << "norm = " << trans_mat.norm << endl;
+                cout << "main: inliers is too small, give up this frame" << endl << endl;
                 continue;
             }
             else
@@ -79,7 +74,7 @@ int main()
             cout << "T = " << trans_mat.T.matrix() << endl;
 
             /*生成并合并点云*/
-            Point_cloud::Ptr cloud = pcloud.join_point_cloud(frame, trans_mat);
+            Point_cloud::Ptr cloud = pcloud.join_point_cloud(current_frame, trans_mat);
 
             /*实时显示点云*/
             if(VISUAL == true && i % FREQUE == 0)
@@ -88,7 +83,7 @@ int main()
             {}
 
             /*处理完成，旧帧出队列*/
-            frame_que.pop();
+            last_frame = current_frame;
         }
         cout << endl;
     }
