@@ -4,12 +4,20 @@ using namespace std;
 
 #include "Features.h"
 
-Feature_detector::Feature_detector(const MyCamera &c, const string &t):
-type(t), camera(c)
+Feature_detector::Feature_detector(MyCamera *mycamera, const string &detect_type):
+type(detect_type)
 {
+    /*入参检测*/
+    if(mycamera != 0)
+        camera = mycamera;
+    else
+    {
+        cout << "Feature_detector: null camera ptr" << endl;
+        throw exception();
+    }
 }
 
-Frame Feature_detector::detect_features(const Mat &rgb, const Mat &depth)
+Frame Feature_detector::detect_features(const Mat &rgb, const Mat &depth) const
 {
     /*特征提取器和描述子提取器*/
     Ptr<FeatureDetector> detector;
@@ -32,7 +40,6 @@ Frame Feature_detector::detect_features(const Mat &rgb, const Mat &depth)
     /*提取关键点*/
     vector<KeyPoint> key_points;
     detector->detect(rgb, key_points);
-    cout << "detect_features: number of keypoints is " << key_points.size() << endl;
 
     /*显示特征*/
     /*cv::Mat img_show;
@@ -52,13 +59,12 @@ Frame Feature_detector::detect_features(const Mat &rgb, const Mat &depth)
     return frame;
 }
 
-vector<DMatch> Feature_detector::match_features(const Frame &frame_before, const Frame &frame_after)
+vector<DMatch> Feature_detector::match_features(const Frame &frame_before, const Frame &frame_after) const
 {
     /*匹配特征描述子*/
     vector<DMatch> matches;
     BFMatcher matcher;
     matcher.match(frame_before.desp, frame_after.desp, matches);
-    cout << "match_features: number of matched features is " << matches.size() << endl;
 
     /*求特征距离的最小值*/
     double min_dis = 9999.0;
@@ -101,7 +107,7 @@ vector<DMatch> Feature_detector::match_features(const Frame &frame_before, const
     return matches;
 }
 
-Result_of_PNP Feature_detector::estimate_motion(const Frame &frame_before, const Frame &frame_after, const vector<DMatch> &matches)
+Transform_mat Feature_detector::estimate_motion(const Frame &frame_before, const Frame &frame_after, const vector<DMatch> &matches) const
 {
     vector<Point3f> pts_obj;
     vector<Point2f> pts_img;
@@ -117,23 +123,23 @@ Result_of_PNP Feature_detector::estimate_motion(const Frame &frame_before, const
             Point2f p2 = frame_after.key_points[matches[i].trainIdx].pt;
             pts_img.push_back(p2);
             Point3f p1_3d(p1.x, p1.y, d);
-            Point3f p1_3d_transed = camera.point2dto3d_by_depth(p1_3d);
+            Point3f p1_3d_transed = camera->point2dto3d(p1_3d);
             pts_obj.push_back(p1_3d_transed);
         }
     }
     Mat rvec, tvec, inliers;
     /*构建相机矩阵*/
     double camera_matrix_data[3][3] = {
-        {camera.Fx, 0, camera.Cx},
-        {0, camera.Fy, camera.Cy},
+        {camera->Fx, 0, camera->Cx},
+        {0, camera->Fy, camera->Cy},
         {0, 0, 1}
     };
-    camera_mat = Mat(3, 3, CV_64F, camera_matrix_data);//为什么构造函数里赋值就不行呢TAT
+    Mat camera_mat = Mat(3, 3, CV_64F, camera_matrix_data);//为什么构造函数里赋值就不行呢TAT
 
     /*求解PNP*/
     solvePnPRansac(pts_obj, pts_img, camera_mat, cv::Mat(), rvec, tvec, false, 100, 1.0, 100, inliers);
 
-    /*构造PNP结果结构体*/
-    Result_of_PNP result(rvec, tvec, inliers.rows);
+    /*构造变换矩阵结构体*/
+    Transform_mat result(rvec, tvec, inliers.rows);
     return result;
 }

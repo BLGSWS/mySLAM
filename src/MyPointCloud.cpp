@@ -3,48 +3,21 @@ using namespace std;
 
 #include "MyPointCloud.h"
 
-Point_cloud::Ptr My_point_cloud::create_point_cloud_by_disp(const Mat &rgb, const Mat &disp)
+My_point_cloud::My_point_cloud(MyCamera *mycamera, const double &voxel_grid_size): 
+grid_size(voxel_grid_size),
+cloud(Point_cloud::Ptr(new Point_cloud()))
 {
-    Point_cloud::Ptr cloud_mount(new Point_cloud());
-
-    if(rgb.rows != disp.rows || rgb.cols != disp.cols)
+    /*入参检测*/
+    if(mycamera != 0)
+        camera = mycamera;
+    else
     {
-        cout << "size of rgb is " << rgb.rows << ", " << rgb.cols << endl;
-        cout << "size of disp is " << disp.rows << ", " << disp.cols << endl;
+        cout << "Feature_detector: null camera ptr" << endl;
         throw exception();
     }
-    else
-    {}
-
-    for (unsigned int u = 0u; u < rgb.rows; ++u)
-    {
-        for (unsigned int v = 0u; v < rgb.cols; ++v)
-        {
-            if((double)disp.at<Vec3b>(u, v)[0] <= 0) continue;
-            else
-            {
-                PointT p;
-                p.z = (double)disp.ptr<ushort>(u)[v];
-                p.x = (double)v;
-                p.y = (double)u;
-
-                PointT np = camera.point2dto3d_by_disp(p);
-                np.b = rgb.ptr<uchar>(u)[v*3];
-                np.g = rgb.ptr<uchar>(u)[v*3 + 1];
-                np.r = rgb.ptr<uchar>(u)[v*3 + 2];
-
-                cloud_mount->points.push_back(np);
-            }
-        }
-    }
-    cloud_mount->height = 1;
-    cloud_mount->width = cloud_mount->points.size();
-    cout << "point cloud size = " << cloud_mount->points.size() << endl;
-    cloud_mount->is_dense = false;
-    return cloud_mount;
 }
 
-Point_cloud::Ptr My_point_cloud::create_point_cloud_by_depth(const Mat &rgb, const Mat &depth)
+Point_cloud::Ptr My_point_cloud::create_point_cloud(const Mat &rgb, const Mat &depth)
 {
     Point_cloud::Ptr cloud_mount(new Point_cloud());
 
@@ -69,7 +42,7 @@ Point_cloud::Ptr My_point_cloud::create_point_cloud_by_depth(const Mat &rgb, con
                 p.y = (double)u;
                 p.z = (double)depth.ptr<ushort>(u)[v];
                 /*确定坐标*/
-                PointT np = camera.point2dto3d_by_depth(p);
+                PointT np = camera->point2dto3d(p);
                 /*染色*/
                 np.b = rgb.ptr<uchar>(u)[v*3];
                 np.g = rgb.ptr<uchar>(u)[v*3 + 1];
@@ -81,12 +54,11 @@ Point_cloud::Ptr My_point_cloud::create_point_cloud_by_depth(const Mat &rgb, con
     }
     cloud_mount->height = 1;
     cloud_mount->width = cloud_mount->points.size();
-    cout << "point cloud size = " << cloud_mount->points.size() << endl;
     cloud_mount->is_dense = false;
     return cloud_mount;
 }
 
-Point_cloud::Ptr My_point_cloud::join_point_cloud(const Frame &frame, const Result_of_PNP &pnp_result)
+Point_cloud::Ptr My_point_cloud::join_point_cloud(const Frame &frame, const Transform_mat &t_mat)
 {
     if(cloud->points.size() == 0)
     {
@@ -96,19 +68,15 @@ Point_cloud::Ptr My_point_cloud::join_point_cloud(const Frame &frame, const Resu
 
     Point_cloud::Ptr cloud_mount(new Point_cloud());
     /*建立点云*/
-    if(TYPE == "depth")
-        cloud_mount = create_point_cloud_by_depth(frame.rgb, frame.depth);
-    else
-        cloud_mount = create_point_cloud_by_disp(frame.rgb, frame.depth);
+    cloud_mount = create_point_cloud(frame.rgb, frame.depth);
 
     /*旋转点云*/
     Point_cloud::Ptr transformed_cloud(new Point_cloud());
-    pcl::transformPointCloud(*cloud, *transformed_cloud, pnp_result.T.matrix());//旋转的是原始点云？？？
+    pcl::transformPointCloud(*cloud, *transformed_cloud, t_mat.T.matrix());//旋转的是原始点云？？？
     *cloud_mount += *transformed_cloud;
 
     /*滤波*/
     static pcl::VoxelGrid<PointT> voxel;
-    double grid_size = GRID_SIZE;
     voxel.setLeafSize(grid_size, grid_size, grid_size);
     voxel.setInputCloud(cloud_mount);
     voxel.filter(*cloud);
@@ -119,10 +87,7 @@ Point_cloud::Ptr My_point_cloud::join_point_cloud(const Frame &frame, const Resu
 Point_cloud::Ptr My_point_cloud::create_first_point_cloud(const Frame &frame)
 {
     /*建立点云*/
-    if(TYPE == "depth")
-        cloud = create_point_cloud_by_depth(frame.rgb, frame.depth);
-    else
-        cloud = create_point_cloud_by_disp(frame.rgb, frame.depth);
+    cloud = create_point_cloud(frame.rgb, frame.depth);
     
     cout << "join_point_cloud: number of points is " << cloud->points.size() << endl;
     return cloud;

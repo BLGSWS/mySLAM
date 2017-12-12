@@ -13,11 +13,12 @@ int main()
 {
 #ifdef VO
     /*定义相机对象*/
-    MyCamera camera = MyCamera(Factor, Cx, Cy, Fx, Fy, Tx);
+    DepthCamera depth_camera = DepthCamera(Factor, Cx, Cy, Fx, Fy, Tx);
+    MyCamera *camera = &depth_camera;//栈内对象，不需要智能指针
     /*定义特征处理对象*/
-    Feature_detector detector = Feature_detector(camera, "ORB");
+    Feature_detector detector = Feature_detector(camera, DETECT_TYPE);
     /*定义点云对象*/
-    My_point_cloud pcloud(camera);
+    My_point_cloud pcloud(camera, GRID_SIZE);
     /*定义pclviewer对象*/
     pcl::visualization::CloudViewer viewer("viewer");
 
@@ -29,7 +30,7 @@ int main()
         /*字符串转个数字还搞这么麻烦*/
         stringstream ss;
         ss << i;
-        cout << "processing " << i << "th image" << endl;
+        cout << "processing " << i << "th image..." << endl;
         /*读取图像*/
         string rgb_filename = "./data/rgb_png/" + ss.str() + ".png";
         string depth_filename = "./data/depth_png/" + ss.str() + ".png";
@@ -57,7 +58,7 @@ int main()
             vector<DMatch> matches = detector.match_features(last_frame, current_frame);
             
             /*pnp求解*/
-            Result_of_PNP trans_mat = detector.estimate_motion(last_frame, current_frame, matches);
+            Transform_mat trans_mat = detector.estimate_motion(last_frame, current_frame, matches);
 
             /*inliers太小放弃该帧*/
             if(trans_mat.inliers <= MIN_INLIERS || trans_mat.norm >= MAX_NORM)

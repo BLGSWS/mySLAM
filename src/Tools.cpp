@@ -96,7 +96,7 @@ bool Param_reader::get_bool(const string &key) const
     }
 }
 
-Result_of_PNP::Result_of_PNP(const Mat &r, const Mat &t, const int &i):
+Transform_mat::Transform_mat(const Mat &r, const Mat &t, const int &i):
 rvec(r), tvec(t), inliers(i), norm(0.0)
 {
     T = Eigen::Isometry3d::Identity();
@@ -104,7 +104,7 @@ rvec(r), tvec(t), inliers(i), norm(0.0)
     norm_of_transform();
 }
 
-void Result_of_PNP::cvmat_to_eigen()
+void Transform_mat::cvmat_to_eigen()
 {
     /*rvec to eigen_R*/
     Mat cv_R;
@@ -121,7 +121,7 @@ void Result_of_PNP::cvmat_to_eigen()
     T(2,3) = tvec.at<double>(0,2);
 }
 
-void Result_of_PNP::norm_of_transform()
+void Transform_mat::norm_of_transform()
 {
     norm = fabs(min(cv::norm(rvec), 2*M_PI - cv::norm(rvec))) + fabs(cv::norm(tvec));
 }

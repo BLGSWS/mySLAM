@@ -51,6 +51,7 @@ const double MAX_NORM = param.get_double("MAX_NORM");
 const bool VISUAL = param.get_bool("VISUAL");
 const int FREQUE = param.get_int("FREQUE");
 const int PIC_NUM = param.get_int("PIC_NUM");
+const string DETECT_TYPE = param.get_string("DETECT_TYPE");
 
 class Frame
 {
@@ -66,10 +67,10 @@ public:
     vector<KeyPoint> key_points; //关键点集
 };
 
-class Result_of_PNP
+class Transform_mat
 {
 public:
-    Result_of_PNP(const Mat &r, const Mat &t, const int &i);
+    Transform_mat(const Mat &r, const Mat &t, const int &i);
     Mat rvec, tvec;
     int inliers;
     Eigen::Isometry3d T;
@@ -77,5 +78,5 @@ public:
 private:
     void cvmat_to_eigen();
     void norm_of_transform();
-    Result_of_PNP();
+    Transform_mat();
 };

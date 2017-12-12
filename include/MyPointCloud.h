@@ -22,18 +22,16 @@ typedef pcl::PointCloud<PointT> Point_cloud;
 class My_point_cloud
 {
 public:
-    My_point_cloud(const MyCamera &c): camera(c),
-    cloud(Point_cloud::Ptr(new Point_cloud()))
-    {}
-    Point_cloud::Ptr join_point_cloud(const Frame &frame, const Result_of_PNP &pnp_result);
+    My_point_cloud(MyCamera *c, const double &voxel_grid_size = 0.01);
+    Point_cloud::Ptr join_point_cloud(const Frame &frame, const Transform_mat &t_mat);
     Point_cloud::Ptr create_first_point_cloud(const Frame &frame);
     Point_cloud::Ptr get_cloud() const;
     void save_point_cloud(const string &file_path) const;
     //void read_point_cloud(const string &file_path);
 private:
-    Point_cloud::Ptr create_point_cloud_by_disp(const Mat &rgb, const Mat &disp);
-    Point_cloud::Ptr create_point_cloud_by_depth(const Mat &rgb, const Mat &disp);
+    Point_cloud::Ptr create_point_cloud(const Mat &rgb, const Mat &depth);
     My_point_cloud();
-    MyCamera camera;
+    MyCamera *camera;
+    double grid_size;
     Point_cloud::Ptr cloud;
 };

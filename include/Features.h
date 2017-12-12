@@ -15,13 +15,12 @@ using namespace cv;
 class Feature_detector
 {
 public:
-    Feature_detector(const MyCamera &camera, const string &t);
-    Frame detect_features(const Mat &rgb, const Mat &depth);
-    vector<DMatch> match_features(const Frame &frame_before, const Frame &frame_after);
-    Result_of_PNP estimate_motion(const Frame &frame_before, const Frame &frame_after, const vector<DMatch> &matches);
+    Feature_detector(MyCamera *mycamera, const string &detect_type = "ORB");
+    Frame detect_features(const Mat &rgb, const Mat &depth) const;
+    vector<DMatch> match_features(const Frame &frame_before, const Frame &frame_after) const;
+    Transform_mat estimate_motion(const Frame &frame_before, const Frame &frame_after, const vector<DMatch> &matches) const;
 private:
-    Mat camera_mat;
-    MyCamera camera;
+    MyCamera *camera;
     string type;
 };
 
