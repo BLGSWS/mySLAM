@@ -41,18 +41,20 @@ class DispCamera: public MyCamera
 public:
     DispCamera(const double &fa, const double &cx, 
              const double &cy, const double &fx, 
-             const double &fy, const double &tx): 
-    MyCamera(fa, cx, cy, fx, fy), Tx(tx)
+             const double &fy, const double &tx, 
+             const double &doffs): 
+    MyCamera(fa, cx, cy, fx, fy), Tx(tx), Doffs(doffs)
     {}
     /*双目相机多了一个目距参数*/
     double Tx;
+    double Doffs;
 protected:
     double get_z(const double &z)
     {
         if(z == 0)
             return 0.0;
         else
-            return Factor * Tx / z;
+            return Factor * Tx / (z + Doffs);
     }
 private:
     DispCamera();
@@ -64,7 +66,7 @@ class DepthCamera: public MyCamera
 public:
     DepthCamera(const double &fa, const double &cx, 
              const double &cy, const double &fx, 
-             const double &fy, const double &tx): 
+             const double &fy): 
     MyCamera(fa, cx, cy, fx, fy)
     {}
 protected:

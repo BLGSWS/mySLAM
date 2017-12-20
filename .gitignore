@@ -1,5 +1,6 @@
 /build
 bin/
+!bin/paraments.ini
 lib/
 /.vscode
 submission.txt

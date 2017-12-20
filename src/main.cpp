@@ -1,4 +1,5 @@
-#define VO
+//#define VO
+#define KITTI
 
 #include <iostream>
 #include <string>
@@ -8,12 +9,13 @@ using namespace std;
 #include "MyPointCloud.h"
 #include "Disparity.h"
 #include "Features.h"
+#include "Optimizer.h"
 
 int main()
 {
 #ifdef VO
     /*定义相机对象*/
-    DepthCamera depth_camera = DepthCamera(Factor, Cx, Cy, Fx, Fy, Tx);
+    DepthCamera depth_camera = DepthCamera(Factor, Cx, Cy, Fx, Fy);
     MyCamera *camera = &depth_camera;//栈内对象，不需要智能指针
     /*定义特征处理对象*/
     Feature_detector detector = Feature_detector(camera, DETECT_TYPE);
@@ -21,6 +23,8 @@ int main()
     My_point_cloud pcloud(camera, GRID_SIZE);
     /*定义pclviewer对象*/
     pcl::visualization::CloudViewer viewer("viewer");
+    /*定义优化器对象*/
+    MyOptimizer optimizer;
 
     Frame current_frame, last_frame;
     bool first_frame_flag = true;
@@ -52,6 +56,7 @@ int main()
             pcloud.create_first_point_cloud(current_frame);
             first_frame_flag = false;
             last_frame = current_frame;
+            optimizer.add_vertex(i);
         }
         else
         {
@@ -82,6 +87,10 @@ int main()
                 viewer.showCloud(cloud);
             else
             {}
+            
+            /*加入新点， 建立新边*/
+            optimizer.add_vertex(i);
+            optimizer.add_edge(i, i - 1, trans_mat.T);
 
             /*处理完成，旧帧出队列*/
             last_frame = current_frame;
@@ -89,8 +98,26 @@ int main()
         cout << endl;
     }
 
+    /*优化并保存结果*/
+    optimizer.optimize();
+    optimizer.save_result("./data/result_after.g2o");
+    
     /*保存点云*/
     pcloud.save_point_cloud("./data/result.pcd");
+#endif
+
+#ifdef KITTI
+    DispCamera disp_camera = DispCamera(Factor, Cx, Cy, Fx, Fy, Tx, DOFFS);
+    MyCamera *camera = &disp_camera;
+    Mat left_rgb = imread("./kitti_test/left/0000000000.png");
+    Mat right_rgb = imread("./kitti_test/right/0000000000.png");
+    Mat disp = BM_get_disparity(left_rgb, right_rgb);
+    //imwrite("./kitti_test/test/disp.png", disp);
+    //disp = imread("./kitti_test/test/disp.png", -1);
+    Frame frame(left_rgb, disp);
+    My_point_cloud pcloud(camera, GRID_SIZE);
+    pcloud.create_first_point_cloud(frame);
+    pcloud.save_point_cloud("./kitti_test/result.pcd");
 #endif
 
     cv::waitKey();

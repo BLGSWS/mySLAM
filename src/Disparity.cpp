@@ -5,16 +5,16 @@ using namespace std;
 
 Mat BM_get_disparity(const Mat &left_rgb, const Mat &right_rgb)
 {
-    Mat left_gray, right_gray, disp;
+    Mat left_gray, right_gray, disp_temp, disp;
     StereoBM bm;
 
     /*设置参数*/
-    int SADWindowSize = 9;
+    int SADWindowSize = SADWIN_SIZE;
     bm.state->SADWindowSize = SADWindowSize > 0 ? SADWindowSize: 9; //SDA窗口大小
     bm.state->minDisparity = 0;  
-    bm.state->numberOfDisparities = 64;//最大搜索视差数
+    bm.state->numberOfDisparities = DISP_NUM;//最大搜索视差数
     bm.state->textureThreshold = 10;  
-    bm.state->uniquenessRatio = 8; //唯一视差百分比
+    bm.state->uniquenessRatio = UNIQUE_RATIO; //唯一视差百分比
     bm.state->speckleWindowSize = 10;
     bm.state->speckleRange = 32;
     bm.state->disp12MaxDiff = 1;
@@ -38,13 +38,13 @@ Mat BM_get_disparity(const Mat &left_rgb, const Mat &right_rgb)
     cvtColor(right_rgb, right_gray, CV_BGR2GRAY);
 
     /*扩充边界，防止黑边*/
-    int border = 80;
+    int border = BORDER;
     copyMakeBorder(left_gray, left_gray, 0, 0, border, 0, IPL_BORDER_REPLICATE);
     copyMakeBorder(right_gray, right_gray, 0, 0, border, 0, IPL_BORDER_REPLICATE);
 
-    bm(left_gray, right_gray, disp, CV_32F);
-    //disp.convertTo(disp, CV_32F, 1.0 / 64);
-
+    bm(left_gray, right_gray, disp_temp, CV_32F);
+    disp_temp.convertTo(disp, CV_16U, 1, 0);
+    
     /*剪裁边界*/
     disp = disp.colRange(border, left_gray.cols);
 

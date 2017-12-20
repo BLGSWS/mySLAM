@@ -52,6 +52,12 @@ const bool VISUAL = param.get_bool("VISUAL");
 const int FREQUE = param.get_int("FREQUE");
 const int PIC_NUM = param.get_int("PIC_NUM");
 const string DETECT_TYPE = param.get_string("DETECT_TYPE");
+//视差
+const int DISP_NUM = param.get_int("DISP_NUM");
+const int BORDER = param.get_int("BORDER");
+const int SADWIN_SIZE = param.get_int("SADWIN_SIZE");
+const int UNIQUE_RATIO = param.get_int("UNIQUE_RATIO");
+const double DOFFS = param.get_int("DOFFS");
 
 class Frame
 {

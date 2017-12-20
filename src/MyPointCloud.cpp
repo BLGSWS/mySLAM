@@ -21,6 +21,7 @@ Point_cloud::Ptr My_point_cloud::create_point_cloud(const Mat &rgb, const Mat &d
 {
     Point_cloud::Ptr cloud_mount(new Point_cloud());
 
+    /*rgb图和深度信息图尺寸必须相等*/
     if(rgb.rows != depth.rows || rgb.cols != depth.cols)
     {
         cout << "size of rgb is " << rgb.rows << ", " << rgb.cols << endl;
@@ -30,23 +31,33 @@ Point_cloud::Ptr My_point_cloud::create_point_cloud(const Mat &rgb, const Mat &d
     else
     {}
 
-    for(unsigned int u = 0u; u < depth.rows; u++)
+    /*深度信息图必须由ushort类型的深度图储存*/
+    if(depth.type() != 2)
     {
-        for(unsigned int v = 0u; v < depth.cols; v++)
+        cout << "create_point_cloud warning: depth info does not store by ushort gray" << endl;
+    }
+    else
+    {}
+
+    /*重建点云*/
+    for(unsigned int i = 0u; i < depth.rows; i++)
+    {
+        for(unsigned int j = 0u; j < depth.cols; j++)
         {
-            if (depth.ptr<ushort>(u)[v] <= 0) continue;
+            ushort z = depth.ptr<ushort>(i)[j];
+            if (z <= 0) continue;
             else
             {
                 PointT p;
-                p.x = (double)v;
-                p.y = (double)u;
-                p.z = (double)depth.ptr<ushort>(u)[v];
+                p.x = (double)j;
+                p.y = (double)i;
+                p.z = (double)z;
                 /*确定坐标*/
                 PointT np = camera->point2dto3d(p);
                 /*染色*/
-                np.b = rgb.ptr<uchar>(u)[v*3];
-                np.g = rgb.ptr<uchar>(u)[v*3 + 1];
-                np.r = rgb.ptr<uchar>(u)[v*3 + 2];
+                np.b = rgb.at<Vec3b>(i, j)[0];
+                np.g = rgb.at<Vec3b>(i, j)[1];
+                np.r = rgb.at<Vec3b>(i, j)[2];
 
                 cloud_mount->points.push_back(np);
             }
