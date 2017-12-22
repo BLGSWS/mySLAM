@@ -27,6 +27,7 @@ public:
     double Cx, Cy;
     /*缩放系数*/
     double Fx, Fy;
+    //virtual ~MyCamera() = 0;
 protected:
     //模板函数竟然不能声明为虚函数
     //虚函数不光要声明还要给实现

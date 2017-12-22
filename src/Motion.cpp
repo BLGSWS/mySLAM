@@ -2,22 +2,25 @@
 #include <vector>
 using namespace std;
 
-#include "Features.h"
+#include "Motion.h"
 
-Feature_detector::Feature_detector(MyCamera *mycamera, const string &detect_type):
-type(detect_type)
+Feature_motion::~Feature_motion()
+{}
+
+PNP_motion::PNP_motion(MyCamera *mycamera, const string &detect_type):
+Feature_motion(), type(detect_type)
 {
     /*入参检测*/
     if(mycamera != 0)
         camera = mycamera;
     else
     {
-        cout << "Feature_detector: null camera ptr" << endl;
+        cout << "PNP_motion: null camera ptr" << endl;
         throw exception();
     }
 }
 
-Frame Feature_detector::detect_features(const Mat &rgb, const Mat &depth) const
+Frame PNP_motion::detect_features(const DImage &dimage) const
 {
     /*特征提取器和描述子提取器*/
     Ptr<FeatureDetector> detector;
@@ -39,32 +42,30 @@ Frame Feature_detector::detect_features(const Mat &rgb, const Mat &depth) const
 
     /*提取关键点*/
     vector<KeyPoint> key_points;
-    detector->detect(rgb, key_points);
+    detector->detect(dimage.rgb_info(), key_points);
 
     /*显示特征*/
     /*cv::Mat img_show;
-    cv::drawKeypoints(rgb, key_points, img_show, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::drawKeypoints(dimage.rgb_info(), key_points, img_show, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     cv::imshow("keypoints", img_show);
     cv::imwrite("./data/keypoints.png", img_show);
     cv::waitKey(0);*/
 
     /*计算特征描述子*/
     Mat desp;
-    descriptor->compute(rgb, key_points, desp);
+    descriptor->compute(dimage.rgb_info(), key_points, desp);
 
     /*返回Frame结构*/
-    Frame frame(rgb, depth);
-    frame.desp = desp;
-    frame.key_points = key_points;
+    Frame frame(dimage, desp, key_points);
     return frame;
 }
 
-vector<DMatch> Feature_detector::match_features(const Frame &frame_before, const Frame &frame_after) const
+vector<DMatch> PNP_motion::match_features(const Frame &frame_before, const Frame &frame_after) const
 {
     /*匹配特征描述子*/
     vector<DMatch> matches;
     BFMatcher matcher;
-    matcher.match(frame_before.desp, frame_after.desp, matches);
+    matcher.match(frame_before.desp_info(), frame_after.desp_info(), matches);
 
     /*求特征距离的最小值*/
     double min_dis = 9999.0;
@@ -100,14 +101,14 @@ vector<DMatch> Feature_detector::match_features(const Frame &frame_before, const
 
     /*显示匹配特征*/
     /*Mat img_matches;
-    drawMatches(frame_before.rgb, frame_before.key_points, frame_after.rgb, frame_after.key_points, matches, img_matches);
+    drawMatches(frame_before.rgb_info(), frame_before.key_points, frame_after.rgb_info(), frame_after.key_points, matches, img_matches);
     imshow( "good matches", img_matches );
     waitKey(0);*/
 
     return matches;
 }
 
-Transform_mat Feature_detector::estimate_motion(const Frame &frame_before, const Frame &frame_after, const vector<DMatch> &matches) const
+Transform_mat PNP_motion::estimate_motion(const Frame &frame_before, const Frame &frame_after, const vector<DMatch> &matches) const
 {
     vector<Point3f> pts_obj;
     vector<Point2f> pts_img;
@@ -115,12 +116,12 @@ Transform_mat Feature_detector::estimate_motion(const Frame &frame_before, const
     /*创建求解PNP需要的入参*/
     for (size_t i = 0u; i < matches.size(); i++)
     {
-        Point2f p1 = frame_before.key_points[matches[i].queryIdx].pt;
-        ushort d = frame_before.depth.ptr<ushort>(int(p1.y))[int(p1.x)];
+        Point2f p1 = frame_before.key_points()[matches[i].queryIdx].pt;
+        ushort d = frame_before.depth_info().ptr<ushort>(int(p1.y))[int(p1.x)];
         if(d == 0) continue;
         else
         {
-            Point2f p2 = frame_after.key_points[matches[i].trainIdx].pt;
+            Point2f p2 = frame_after.key_points()[matches[i].trainIdx].pt;
             pts_img.push_back(p2);
             Point3f p1_3d(p1.x, p1.y, d);
             Point3f p1_3d_transed = camera->point2dto3d(p1_3d);

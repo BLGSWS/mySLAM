@@ -11,6 +11,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/calib3d/calib3d.hpp>//KeyPoint
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 using namespace std;
 using namespace cv;
@@ -31,6 +32,8 @@ private:
 
 const Param_reader param("./paraments.ini");//在头文件中定义非const类型对象会出现重定义错误
 
+const int START_INDEX = param.get_int("START_INDEX");
+const int END_INDEX = param.get_int("END_INDEX");
 /*相机内参*/
 //焦距
 const double Factor = param.get_double("Factor");
@@ -50,39 +53,58 @@ const int MIN_INLIERS = param.get_int("MIN_INLIERS");
 const double MAX_NORM = param.get_double("MAX_NORM");
 const bool VISUAL = param.get_bool("VISUAL");
 const int FREQUE = param.get_int("FREQUE");
-const int PIC_NUM = param.get_int("PIC_NUM");
 const string DETECT_TYPE = param.get_string("DETECT_TYPE");
 //视差
-const int DISP_NUM = param.get_int("DISP_NUM");
+const int MAX_DISP_NUM = param.get_int("MAX_DISP_NUM");
 const int BORDER = param.get_int("BORDER");
 const int SADWIN_SIZE = param.get_int("SADWIN_SIZE");
 const int UNIQUE_RATIO = param.get_int("UNIQUE_RATIO");
 const double DOFFS = param.get_int("DOFFS");
+
+class DImage
+{
+public:
+    DImage()
+    {}
+    DImage(const Mat &rgb_info, const Mat &depth_info);
+    Mat rgb_info() const;
+    Mat depth_info() const;
+private:
+    Mat rgb_mat;
+    Mat depth_mat;
+};
 
 class Frame
 {
 public:
     Frame()
     {}
-    Frame(const Mat &rgb_img, const Mat &depth_img):
-    rgb(rgb_img), depth(depth_img) 
-    {}
-    Mat rgb;
-    Mat depth;
+    Frame(const DImage &dimage, const Mat &description, const vector<KeyPoint> &keypoints);
+    Mat depth_info() const;
+    Mat rgb_info() const;
+    Mat desp_info() const;
+    DImage get_dimage() const;
+    vector<KeyPoint> key_points() const;
+private:
+    DImage d_image;
     Mat desp; //特征描述子
-    vector<KeyPoint> key_points; //关键点集
+    vector<KeyPoint> key_points_list; //关键点集
 };
 
 class Transform_mat
 {
 public:
     Transform_mat(const Mat &r, const Mat &t, const int &i);
-    Mat rvec, tvec;
-    int inliers;
-    Eigen::Isometry3d T;
-    double norm;
+    static Transform_mat Empty_Transform_mat();
+    Eigen::Isometry3d eigen_T() const;
+    bool is_empty() const;
+    double get_norm() const;
+    int get_inliers() const;
 private:
-    void cvmat_to_eigen();
-    void norm_of_transform();
     Transform_mat();
+    Mat rvec, tvec;//旋转矩阵 ,平移向量
+    int inliers;
+    Eigen::Isometry3d T;//齐次变换矩阵
+    void cvmat_to_eigen();
+    bool empty;//
 };

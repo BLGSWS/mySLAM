@@ -9,28 +9,25 @@
 #include <pcl/filters/voxel_grid.h> //滤波器
 #include <pcl/visualization/cloud_viewer.h>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-using namespace cv;
-
 #include "Camera.h"
 #include "Tools.h"
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Point_cloud;
+typedef pcl::visualization::CloudViewer Cloud_viewer;
 
-class My_point_cloud
+class Point_cloud_map
 {
 public:
-    My_point_cloud(MyCamera *c, const double &voxel_grid_size = 0.01);
-    Point_cloud::Ptr join_point_cloud(const Frame &frame, const Transform_mat &t_mat);
-    Point_cloud::Ptr create_first_point_cloud(const Frame &frame);
+    Point_cloud_map(MyCamera *c, Cloud_viewer* viewer = 0, const double &voxel_grid_size = GRID_SIZE);
+    Point_cloud::Ptr join_point_cloud(const DImage &dimage, const Transform_mat &t_mat);
     Point_cloud::Ptr get_cloud() const;
     void save_point_cloud(const string &file_path) const;
     //void read_point_cloud(const string &file_path);
 private:
-    Point_cloud::Ptr create_point_cloud(const Mat &rgb, const Mat &depth);
-    My_point_cloud();
+    Point_cloud::Ptr create_point_cloud(const DImage &dimage);
+    Point_cloud_map();
+    Cloud_viewer* cloud_viewer;
     MyCamera *camera;
     double grid_size;
     Point_cloud::Ptr cloud;

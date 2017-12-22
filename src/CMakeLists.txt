@@ -20,34 +20,38 @@ INCLUDE_DIRECTORIES( ${G2O_INCLUDE_DIR} ${CSPARSE_INCLUDE_DIR} )
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
 
-ADD_LIBRARY( optimizer STATIC Optimizer.cpp)
-TARGET_LINK_LIBRARIES( optimizer
-    g2o_core g2o_types_slam3d g2o_solver_csparse g2o_stuff g2o_csparse_extension ${CSPARSE_LIBRARY} )
-
 ADD_LIBRARY( tools STATIC Tools.cpp )
 TARGET_LINK_LIBRARIES( tools 
     ${OpenCV_LIBS} )
 
-ADD_LIBRARY( disparity STATIC Disparity.cpp )
-TARGET_LINK_LIBRARIES( disparity 
+ADD_LIBRARY( optimizer STATIC Optimizer.cpp)
+TARGET_LINK_LIBRARIES( optimizer
+    tools
+    g2o_core g2o_types_slam3d g2o_solver_csparse g2o_stuff g2o_csparse_extension ${CSPARSE_LIBRARY} )
+
+ADD_LIBRARY( pretreat STATIC Pretreat.cpp )
+TARGET_LINK_LIBRARIES( pretreat 
     tools 
     ${OpenCV_LIBS} )
 
-ADD_LIBRARY( mypointcloud STATIC MyPointCloud.cpp )
-TARGET_LINK_LIBRARIES( mypointcloud 
+ADD_LIBRARY( map STATIC Map.cpp )
+TARGET_LINK_LIBRARIES( map 
     tools 
-    ${OpenCV_LIBS} 
     ${PCL_LIBRARIES} )
 
-ADD_LIBRARY( features STATIC Features.cpp)
-TARGET_LINK_LIBRARIES( features 
+ADD_LIBRARY( motion STATIC Motion.cpp)
+TARGET_LINK_LIBRARIES( motion 
     tools
     ${OpenCV_LIBS} )
 
+ADD_LIBRARY( vo STATIC VisualOdometry.cpp )
+TARGET_LINK_LIBRARIES( vo
+    map
+    motion )
+
 ADD_EXECUTABLE( main main.cpp )
 TARGET_LINK_LIBRARIES( main 
-    optimizer
-    mypointcloud 
-    disparity
-    features )
+    vo
+    optimizer 
+    pretreat )
 

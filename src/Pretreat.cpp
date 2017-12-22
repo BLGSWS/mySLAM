@@ -1,20 +1,33 @@
 #include <iostream>
 using namespace std;
 
-#include "Disparity.h"
+#include "Pretreat.h"
 
-Mat BM_get_disparity(const Mat &left_rgb, const Mat &right_rgb)
+Disp_pretreat::~Disp_pretreat()
+{}
+
+DImage Depth_pretreat::pretreat(const Mat &rgb, const Mat &depth)
+{
+    return DImage(rgb, depth);
+}
+
+BM_Disp_pretreat::BM_Disp_pretreat(int sadwin_size, int broder, 
+int max_disp_num, int unique_ratio): 
+bm_sadwin_size(sadwin_size), bm_broder(broder), 
+bm_max_disp_num(max_disp_num), bm_unique_ratio(unique_ratio)
+{}
+
+DImage BM_Disp_pretreat::pretreat(const Mat &left_rgb, const Mat &right_rgb)
 {
     Mat left_gray, right_gray, disp_temp, disp;
     StereoBM bm;
 
     /*设置参数*/
-    int SADWindowSize = SADWIN_SIZE;
-    bm.state->SADWindowSize = SADWindowSize > 0 ? SADWindowSize: 9; //SDA窗口大小
+    bm.state->SADWindowSize = bm_sadwin_size > 0 ? bm_sadwin_size: 9; //SDA窗口大小
     bm.state->minDisparity = 0;  
-    bm.state->numberOfDisparities = DISP_NUM;//最大搜索视差数
+    bm.state->numberOfDisparities = bm_max_disp_num;//最大搜索视差数
     bm.state->textureThreshold = 10;  
-    bm.state->uniquenessRatio = UNIQUE_RATIO; //唯一视差百分比
+    bm.state->uniquenessRatio = bm_unique_ratio; //唯一视差百分比
     bm.state->speckleWindowSize = 10;
     bm.state->speckleRange = 32;
     bm.state->disp12MaxDiff = 1;
@@ -38,27 +51,27 @@ Mat BM_get_disparity(const Mat &left_rgb, const Mat &right_rgb)
     cvtColor(right_rgb, right_gray, CV_BGR2GRAY);
 
     /*扩充边界，防止黑边*/
-    int border = BORDER;
-    copyMakeBorder(left_gray, left_gray, 0, 0, border, 0, IPL_BORDER_REPLICATE);
-    copyMakeBorder(right_gray, right_gray, 0, 0, border, 0, IPL_BORDER_REPLICATE);
+    copyMakeBorder(left_gray, left_gray, 0, 0, bm_broder, 0, IPL_BORDER_REPLICATE);
+    copyMakeBorder(right_gray, right_gray, 0, 0, bm_broder, 0, IPL_BORDER_REPLICATE);
 
     bm(left_gray, right_gray, disp_temp, CV_32F);
     disp_temp.convertTo(disp, CV_16U, 1, 0);
     
     /*剪裁边界*/
-    disp = disp.colRange(border, left_gray.cols);
+    disp = disp.colRange(bm_broder, left_gray.cols);
 
-    return disp;
+    /**/
+    return DImage(left_rgb, disp);
 }
 
-Mat GC_get_disparity(const Mat &left_rgb, const Mat &right_rgb)
+DImage GC_Disp_pretreat::pretreat(const Mat &left_rgb, const Mat &right_rgb)
 {
     Mat left_gray, right_gray;
 
     cvtColor(left_rgb, left_gray, CV_BGR2GRAY);
     cvtColor(right_rgb, right_gray, CV_BGR2GRAY);
 
-    CvStereoGCState *state = cvCreateStereoGCState( 16, 2 );
+    CvStereoGCState *state = cvCreateStereoGCState(16, 2);
     CvMat left_cvmat = left_gray;
     CvMat right_cvmat = right_gray;
     CvMat *p_left = &left_cvmat;
@@ -68,6 +81,6 @@ Mat GC_get_disparity(const Mat &left_rgb, const Mat &right_rgb)
     cvFindStereoCorrespondenceGC( p_left, p_right, p_left_disp, p_right_disp, state, 0 ); 
     cvReleaseStereoGCState( &state );
 
-    Mat left_disp(p_left_disp);
-    return left_disp;
+    Mat disp(p_left_disp);
+    return DImage(left_rgb, disp);
 }

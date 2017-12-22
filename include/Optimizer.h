@@ -16,6 +16,8 @@ using namespace std;
 #include <g2o/core/robust_kernel_factory.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
 
+#include "Tools.h"
+
 typedef g2o::BlockSolver<g2o::BlockSolver_6_3> SlamBlockSolver;//6*3的块求解器
 typedef g2o::LinearSolverCSparse<SlamBlockSolver::PoseMatrixType> SlamLinearSolver;
 
@@ -23,8 +25,8 @@ class MyOptimizer
 {
 public:
     MyOptimizer();
-    void add_vertex(const int &vertex_id);
-    void add_edge(const int &current_vertex_id, const int &last_vertex_id, Eigen::Isometry3d &T);
+    void add_edge(const unsigned int &vertex_id, const Transform_mat &trans_mat);
+    void add_loop_edge(const unsigned int &current_vertex_id, const unsigned int &last_vertex_id);
     void optimize();
     void save_result(const string &file_path) const;
     ~MyOptimizer()
@@ -33,4 +35,6 @@ public:
     }
 private:
     g2o::SparseOptimizer globalOptimizer;
+    int last_index;
+    int current_index;
 };
