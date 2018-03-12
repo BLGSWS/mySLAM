@@ -7,10 +7,9 @@
 #include <queue>
 using namespace std;
 
-//#include "Map.h"
+#include "Map.h"
 #include "Pretreat.h"
 //#include "Features.h"
-#include "Optimizer.h"
 #include "VisualOdometry.h"
 
 int main()
@@ -144,13 +143,18 @@ int main()
     Point_cloud_map pcloud(camera, p_viewer);
     Point_cloud_map *p_pcloud = &pcloud;
 
-    /*定义视觉里程计对象*/
-    VO vo = VO(p_detector, p_pcloud);
-
     /*定义优化器对象*/
     MyOptimizer optimizer;
+    MyOptimizer* p_optimizer = &optimizer;
 
-    for(unsigned int i = START_INDEX; i <= END_INDEX; i++)
+    /*定义回环检测对象*/
+    Easy_Loop_check loop_ckeck(p_detector, p_optimizer);
+    Easy_Loop_check* p_loop_check = &loop_ckeck;
+
+    /*定义视觉里程计对象*/
+    VO vo = VO(p_detector, p_loop_check);
+
+    for (uint32 i = START_INDEX; i <= END_INDEX; i++)
     {
         /*读取文件*/
         stringstream ss;
@@ -171,19 +175,24 @@ int main()
         {}
         DImage dimage = pret->pretreat(rgb, depth);
 
-        /*获取位姿变化*/
-        Transform_mat trans_mat = vo.process_frame(dimage);
-
-        /*后端优化*/
-        optimizer.add_edge(i, trans_mat);
+        vo.process(dimage);
     }
 
     /*优化并保存结果*/
     optimizer.optimize();
     optimizer.save_result("./data/result_after.g2o");
     
+    /*建图*/
+    vector<Frame> key_frames = vo.get_key_frames();
+    for (size_t i = 0; i < key_frames.size(); i++)
+    {
+        Frame frame = key_frames[i];
+        Eigen::Isometry3d pose = optimizer.get_pose(key_frames[i].get_id());
+        cout << pose.matrix() << endl;
+        pcloud.join_point_cloud(key_frames[i].get_dimage(), pose);
+    }
     /*保存点云*/
-    pcloud.save_point_cloud("./data/result.pcd");
+    //pcloud.save_point_cloud("./data/result.pcd");
 
 #endif
     cv::waitKey();

@@ -6,7 +6,8 @@
 #include <pcl/point_types.h> 
 
 #include <pcl/common/transforms.h> //变换矩阵
-#include <pcl/filters/voxel_grid.h> //滤波器
+#include <pcl/filters/voxel_grid.h> //网格滤波器
+#include <pcl/filters/passthrough.h> //z方向滤波器
 #include <pcl/visualization/cloud_viewer.h>
 
 #include "Camera.h"
@@ -20,12 +21,13 @@ class Point_cloud_map
 {
 public:
     Point_cloud_map(MyCamera *c, Cloud_viewer* viewer = 0, const double &voxel_grid_size = GRID_SIZE);
-    Point_cloud::Ptr join_point_cloud(const DImage &dimage, const Transform_mat &t_mat);
+    Point_cloud::Ptr join_point_cloud(const DImage &dimage, const Eigen::Isometry3d &trans_mat);
     Point_cloud::Ptr get_cloud() const;
     void save_point_cloud(const string &file_path) const;
     //void read_point_cloud(const string &file_path);
-private:
+protected:
     Point_cloud::Ptr create_point_cloud(const DImage &dimage);
+private:
     Point_cloud_map();
     Cloud_viewer* cloud_viewer;
     MyCamera *camera;

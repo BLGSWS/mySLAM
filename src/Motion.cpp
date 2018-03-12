@@ -56,7 +56,10 @@ Frame PNP_motion::detect_features(const DImage &dimage) const
     descriptor->compute(dimage.rgb_info(), key_points, desp);
 
     /*返回Frame结构*/
-    Frame frame(dimage, desp, key_points);
+    static uint32 id = 0;
+    id++;
+    Frame frame(dimage, desp, key_points, id);
+
     return frame;
 }
 
@@ -65,6 +68,7 @@ vector<DMatch> PNP_motion::match_features(const Frame &frame_before, const Frame
     /*匹配特征描述子*/
     vector<DMatch> matches;
     BFMatcher matcher;
+
     matcher.match(frame_before.desp_info(), frame_after.desp_info(), matches);
 
     /*求特征距离的最小值*/
@@ -78,7 +82,7 @@ vector<DMatch> PNP_motion::match_features(const Frame &frame_before, const Frame
         else
         {}
     }
-    cout << "match_features: min dis is " << min_dis << endl;
+    //cout << "match_features: min dis is " << min_dis << endl;
 
     if(min_dis < 10) min_dis = 10;
     else
@@ -97,7 +101,7 @@ vector<DMatch> PNP_motion::match_features(const Frame &frame_before, const Frame
             it++;
         }
     }
-    cout << "match_features: number of reserved features is " << matches.size() << endl;
+    //cout << "match_features: number of reserved features is " << matches.size() << endl;
 
     /*显示匹配特征*/
     /*Mat img_matches;

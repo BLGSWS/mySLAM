@@ -24,11 +24,6 @@ ADD_LIBRARY( tools STATIC Tools.cpp )
 TARGET_LINK_LIBRARIES( tools 
     ${OpenCV_LIBS} )
 
-ADD_LIBRARY( optimizer STATIC Optimizer.cpp)
-TARGET_LINK_LIBRARIES( optimizer
-    tools
-    g2o_core g2o_types_slam3d g2o_solver_csparse g2o_stuff g2o_csparse_extension ${CSPARSE_LIBRARY} )
-
 ADD_LIBRARY( pretreat STATIC Pretreat.cpp )
 TARGET_LINK_LIBRARIES( pretreat 
     tools 
@@ -44,14 +39,20 @@ TARGET_LINK_LIBRARIES( motion
     tools
     ${OpenCV_LIBS} )
 
+ADD_LIBRARY( optimizer STATIC Optimizer.cpp)
+TARGET_LINK_LIBRARIES( optimizer
+    motion
+    tools
+    g2o_core g2o_types_slam3d g2o_solver_csparse g2o_stuff g2o_csparse_extension ${CSPARSE_LIBRARY} )
+
 ADD_LIBRARY( vo STATIC VisualOdometry.cpp )
 TARGET_LINK_LIBRARIES( vo
-    map
-    motion )
+    motion
+    optimizer )
 
 ADD_EXECUTABLE( main main.cpp )
 TARGET_LINK_LIBRARIES( main 
-    vo
-    optimizer 
-    pretreat )
+    vo 
+    pretreat
+    map )
 

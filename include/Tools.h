@@ -16,14 +16,17 @@
 using namespace std;
 using namespace cv;
 
+typedef unsigned int uint32;
+
 class Param_reader
 {
 public:
     Param_reader(const string &fp);
-    int get_int(const string &key) const;
-    double get_double(const string &key) const;
-    string get_string(const string &key) const;
-    bool get_bool(const string &key) const;
+    const int get_int(const string &key) const;
+    const uint32 get_uint(const string &key) const;
+    const double get_double(const string &key) const;
+    const string get_string(const string &key) const;
+    const bool get_bool(const string &key) const;
 private:
     Param_reader();
     string file_path;
@@ -32,8 +35,8 @@ private:
 
 const Param_reader param("./paraments.ini");//在头文件中定义非const类型对象会出现重定义错误
 
-const int START_INDEX = param.get_int("START_INDEX");
-const int END_INDEX = param.get_int("END_INDEX");
+const uint32 START_INDEX = param.get_uint("START_INDEX");
+const uint32 END_INDEX = param.get_uint("END_INDEX");
 /*相机内参*/
 //焦距
 const double Factor = param.get_double("Factor");
@@ -51,9 +54,12 @@ const double GRID_SIZE = param.get_double("GRID_SIZE");
 const int MIN_MATCHES = param.get_int("MIN_MATCHES");
 const int MIN_INLIERS = param.get_int("MIN_INLIERS");
 const double MAX_NORM = param.get_double("MAX_NORM");
+const double MIN_NORM = param.get_double("MIN_NORM");
 const bool VISUAL = param.get_bool("VISUAL");
 const int FREQUE = param.get_int("FREQUE");
 const string DETECT_TYPE = param.get_string("DETECT_TYPE");
+const int NEARBY_CHECK_NUM = param.get_int("NEARBY_CHECK_NUM");
+const int RANDOM_CHECK_NUM = param.get_int("RANDOM_CHECK_NUM");
 //视差
 const int MAX_DISP_NUM = param.get_int("MAX_DISP_NUM");
 const int BORDER = param.get_int("BORDER");
@@ -67,8 +73,9 @@ public:
     DImage()
     {}
     DImage(const Mat &rgb_info, const Mat &depth_info);
-    Mat rgb_info() const;
-    Mat depth_info() const;
+    /*私有成员接口*/
+    const Mat& rgb_info() const { return rgb_mat; }
+    const Mat& depth_info() const { return depth_mat; }
 private:
     Mat rgb_mat;
     Mat depth_mat;
@@ -79,13 +86,16 @@ class Frame
 public:
     Frame()
     {}
-    Frame(const DImage &dimage, const Mat &description, const vector<KeyPoint> &keypoints);
-    Mat depth_info() const;
-    Mat rgb_info() const;
-    Mat desp_info() const;
-    DImage get_dimage() const;
-    vector<KeyPoint> key_points() const;
+    Frame(const DImage &dimage, const Mat &description, const vector<KeyPoint> &keypoints, const uint32 &i);
+    /*私有成员接口*/
+    const Mat& depth_info() const { return d_image.depth_info(); }
+    const Mat& rgb_info() const { return d_image.rgb_info(); }
+    const Mat& desp_info() const { return desp; }
+    const DImage& get_dimage() const { return d_image; }
+    const vector<KeyPoint>& key_points() const { return key_points_list; }
+    uint32 get_id() const { return id; }
 private:
+    uint32 id;
     DImage d_image;
     Mat desp; //特征描述子
     vector<KeyPoint> key_points_list; //关键点集
@@ -94,17 +104,21 @@ private:
 class Transform_mat
 {
 public:
+    /*由旋转矩阵r，位移向量t构造变换矩阵*/
     Transform_mat(const Mat &r, const Mat &t, const int &i);
+    /*构造空变换矩阵*/
     static Transform_mat Empty_Transform_mat();
-    Eigen::Isometry3d eigen_T() const;
-    bool is_empty() const;
+    /*私有成员接口*/
+    const Eigen::Isometry3d& eigen_T() const { return T; }
+    bool is_empty() const { return empty_flag; }
     double get_norm() const;
-    int get_inliers() const;
+    int get_inliers() const { return inliers; }
 private:
     Transform_mat();
     Mat rvec, tvec;//旋转矩阵 ,平移向量
     int inliers;
     Eigen::Isometry3d T;//齐次变换矩阵
+    /*cv类型矩阵转换为eigen类型矩阵*/
     void cvmat_to_eigen();
-    bool empty;//
+    bool empty_flag;//是否为空矩阵
 };

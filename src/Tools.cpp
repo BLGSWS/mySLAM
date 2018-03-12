@@ -14,44 +14,9 @@ rgb_mat(rgb_info), depth_mat(depth_info)
     {}
 }
 
-Mat DImage::rgb_info() const
-{
-    return rgb_mat;
-}
-
-Mat DImage::depth_info() const
-{
-    return depth_mat;
-}
-
-Frame::Frame(const DImage &dimage, const Mat &description, const vector<KeyPoint> &keypoints): 
-d_image(dimage), desp(description), key_points_list(keypoints)
+Frame::Frame(const DImage &dimage, const Mat &description, const vector<KeyPoint> &keypoints, const uint32 &i): 
+d_image(dimage), desp(description), key_points_list(keypoints), id(i)
 {}
-
-Mat Frame::depth_info() const
-{
-    return d_image.depth_info();
-}
-
-Mat Frame::rgb_info() const
-{
-    return d_image.rgb_info();
-}
-
-Mat Frame::desp_info() const
-{
-    return desp;
-}
-
-DImage Frame::get_dimage() const
-{
-    return d_image;
-}
-
-vector<KeyPoint> Frame::key_points() const
-{
-    return key_points_list;
-}
 
 Param_reader::Param_reader(const string &fp): file_path(fp)
 {
@@ -88,7 +53,7 @@ Param_reader::Param_reader(const string &fp): file_path(fp)
     }
 }
 
-int Param_reader::get_int(const string &key) const
+const int Param_reader::get_int(const string &key) const
 {
     stringstream ss;
     map<string, string>::const_iterator it = params.find(key);
@@ -103,7 +68,26 @@ int Param_reader::get_int(const string &key) const
     return i;
 }
 
-double Param_reader::get_double(const string &key) const
+const uint32 Param_reader::get_uint(const string &key) const
+{
+    stringstream ss;
+    map<string, string>::const_iterator it = params.find(key);
+    if (it == params.end())
+    {
+        cout << "Params: can not find " << key << " in paraments file" << endl;
+        throw exception();
+    }
+    ss << it->second;
+    int i;
+    ss >> i;
+    if(i < 0)
+    {
+        cout << "Warning: Param_reader::get_uint: value is less than 0, need unsigned int type" << endl;
+    }
+    return i;
+}
+
+const double Param_reader::get_double(const string &key) const
 {
     stringstream ss;
     map<string, string>::const_iterator it = params.find(key);
@@ -118,7 +102,7 @@ double Param_reader::get_double(const string &key) const
     return d;
 }
 
-string Param_reader::get_string(const string &key) const
+const string Param_reader::get_string(const string &key) const
 {
     map<string, string>::const_iterator it = params.find(key);
     if (it == params.end())
@@ -129,7 +113,7 @@ string Param_reader::get_string(const string &key) const
     return it->second;
 }
 
-bool Param_reader::get_bool(const string &key) const
+const bool Param_reader::get_bool(const string &key) const
 {
     map<string, string>::const_iterator it = params.find(key);
     if (it == params.end())
@@ -148,11 +132,11 @@ bool Param_reader::get_bool(const string &key) const
     }
 }
 
-Transform_mat::Transform_mat(): empty(true)
+Transform_mat::Transform_mat(): empty_flag(true)
 {}
 
 Transform_mat::Transform_mat(const Mat &r, const Mat &t, const int &i):
-rvec(r), tvec(t), inliers(i), empty(false)
+rvec(r), tvec(t), inliers(i), empty_flag(false)
 {
     T = Eigen::Isometry3d::Identity();
     cvmat_to_eigen();
@@ -163,24 +147,9 @@ Transform_mat Transform_mat::Empty_Transform_mat()
     return Transform_mat();
 }
 
-Eigen::Isometry3d Transform_mat::eigen_T() const
-{
-    return T;
-}
-
-bool Transform_mat::is_empty() const
-{
-    return empty;
-}
-
 double Transform_mat::get_norm() const
 {
     return fabs(min(cv::norm(rvec), 2*M_PI - cv::norm(rvec))) + fabs(cv::norm(tvec));
-}
-
-int Transform_mat::get_inliers() const
-{
-    return inliers;
 }
 
 void Transform_mat::cvmat_to_eigen()
